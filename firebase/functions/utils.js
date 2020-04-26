@@ -4,7 +4,11 @@ exports.getTextBlocks = function (res) {
   res.pages.forEach((page) => {
     textBlocks = textBlocks.concat(
       page.blocks.map((block) => {
-        return { blockIndex: blockIndex++, text: getBlockText(block) };
+        return {
+          blockIndex: blockIndex++,
+          text: getBlockText(block),
+          x: block.boundingBox.vertices[0].x,
+        };
       })
     );
   });

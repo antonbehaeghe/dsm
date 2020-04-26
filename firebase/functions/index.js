@@ -84,3 +84,92 @@ exports.getRound2Questions = functions.https.onRequest(async (req, res) => {
 
   res.send(allData);
 });
+
+exports.getRound3Questions = functions.https.onRequest(async (req, res) => {
+  const imgs = ["q01A", "q01B"];
+  let allData = [];
+
+  const docRef = admin.firestore().collection("round3").doc("puzzle01");
+
+  for (const img of imgs) {
+    const imageUri = `gs://dsm-ocr.appspot.com/round3/${img}.jpg`;
+
+    const [result] = await visionClient.textDetection(imageUri);
+
+    const data = result.fullTextAnnotation;
+
+    allData.push(data);
+  }
+
+  const formattedData = allData.map((d) => {
+    const blocks = utils.getTextBlocks(d);
+
+    const puzzlePieces = blocks.slice(3, 15);
+
+    const answers = blocks
+      .slice(15, 18)
+      .map((answer) => ({ ...answer, pieces: [] }));
+
+    const puzzleGroups = blocks
+      .slice(18)
+      .sort((a, b) => a.x - b.x)
+      .reduce((acc, curr, i, src) => {
+        const prev = src[i - 1];
+        if (prev && curr.x - prev.x < 50) {
+          const newAcc = [...acc];
+          newAcc[newAcc.length - 1].text =
+            newAcc[newAcc.length - 1].text + " " + curr.text;
+          return newAcc;
+        } else {
+          return [...acc, curr];
+        }
+      }, []);
+
+    return {
+      puzzlePieces,
+      answers,
+      puzzleGroups,
+    };
+  });
+
+  const q01 = {
+    puzzlePieces: formattedData[0].puzzlePieces,
+    answers: formattedData[1].answers,
+    puzzleGroups: formattedData[1].puzzleGroups,
+  };
+
+  q01.puzzlePieces.forEach((term) => {
+    const t = term.text.toLowerCase().trim();
+    q01.puzzleGroups.forEach((group, i) => {
+      const g = group.text.toLowerCase().trim();
+      if (g.includes(t)) {
+        q01.answers[i].pieces.push(term);
+      }
+    });
+  });
+
+  const q02 = {
+    puzzlePieces: formattedData[1].puzzlePieces,
+    answers: formattedData[0].answers,
+    puzzleGroups: formattedData[0].puzzleGroups,
+  };
+
+  const q01Obj = {
+    pieces: q01.puzzlePieces,
+    answers: q01.answers,
+  };
+
+  const q02Obj = {
+    pieces: q02.puzzlePieces,
+    answers: q02.answers,
+  };
+
+  const qObj = {
+    q01: q01Obj,
+    q02: q02Obj,
+  };
+
+  docRef.set({ puzzle: qObj });
+
+  res.send(allData);
+});
