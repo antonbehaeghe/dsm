@@ -1,9 +1,9 @@
-exports.getTextBlocks = function (res) {
-  let textBlocks = [];
+export function getTextBlocks(res: any): any {
+  let textBlocks: Array<Object> = [];
   let blockIndex = 0;
-  res.pages.forEach((page) => {
+  res.pages.forEach((page: any) => {
     textBlocks = textBlocks.concat(
-      page.blocks.map((block) => {
+      page.blocks.map((block: any) => {
         return {
           blockIndex: blockIndex++,
           text: getBlockText(block),
@@ -13,13 +13,13 @@ exports.getTextBlocks = function (res) {
     );
   });
   return textBlocks;
-};
+}
 
-function getBlockText(block) {
+function getBlockText(block: any) {
   let result = "";
-  block.paragraphs.forEach((paragraph) => {
-    paragraph.words.forEach((word) => {
-      word.symbols.forEach((symbol) => {
+  block.paragraphs.forEach((paragraph: any) => {
+    paragraph.words.forEach((word: any) => {
+      word.symbols.forEach((symbol: any) => {
         result += symbol.text;
         if (symbol.property && symbol.property.detectedBreak) {
           const breakType = symbol.property.detectedBreak.type;

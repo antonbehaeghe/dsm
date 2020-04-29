@@ -2,8 +2,10 @@
   "name": "functions",
   "description": "Cloud Functions for Firebase",
   "scripts": {
-    "lint": "eslint .",
-    "serve": "set GOOGLE_APPLICATION_CREDENTIALS=key.json&&firebase emulators:start --only functions --inspect-functions",
+    "lint": "tslint --project tsconfig.json",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "serve": "set GOOGLE_APPLICATION_CREDENTIALS=key.json&&npm run watch | firebase emulators:start --only functions --inspect-functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
@@ -12,14 +14,15 @@
   "engines": {
     "node": "8"
   },
+  "main": "lib/index.js",
   "dependencies": {
     "@google-cloud/vision": "^1.11.0",
     "firebase-admin": "^8.10.0",
     "firebase-functions": "^3.6.0"
   },
   "devDependencies": {
-    "eslint": "^5.12.0",
-    "eslint-plugin-promise": "^4.0.1",
+    "tslint": "^5.12.0",
+    "typescript": "^3.2.2",
     "firebase-functions-test": "^0.2.0"
   },
   "private": true

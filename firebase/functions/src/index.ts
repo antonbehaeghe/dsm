@@ -1,10 +1,15 @@
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
+import * as functions from "firebase-functions";
+import * as admin from "firebase-admin";
 const vision = require("@google-cloud/vision");
-const utils = require("./utils");
+import * as utils from "./utils";
 
 admin.initializeApp(functions.config().firebase);
 const visionClient = new vision.ImageAnnotatorClient();
+
+interface VisionResultBlock {
+  text: string;
+  x: number;
+}
 
 exports.getText = functions.storage.object().onFinalize(async (object) => {
   const bucket = object.bucket;
@@ -36,23 +41,27 @@ exports.getRound1Questions = functions.https.onRequest(async (req, res) => {
 
     const [result] = await visionClient.textDetection(imageUri);
 
-    const data = result.textAnnotations[0];
-    const text = data.description;
+    if (result && result.textAnnotations) {
+      const data = result.textAnnotations[0];
+      const text = data.description;
 
-    const lines = text.split("V:").filter((q) => q.startsWith(" "));
+      if (text) {
+        const lines = text.split("V:").filter((q: string) => q.startsWith(" "));
 
-    const questions = lines.map((line) => {
-      const q = line.split("A:")[0].trim();
-      const a = line.split("A:")[1].trim();
+        const questions = lines.map((line: string) => {
+          const q = line.split("A:")[0].trim();
+          const a = line.split("A:")[1].trim();
 
-      return {
-        question: q,
-        answer: a,
-      };
-    });
+          return {
+            question: q,
+            answer: a,
+          };
+        });
 
-    docRef.set({ questions });
-    allData.push(data);
+        docRef.set({ questions });
+        allData.push(data);
+      }
+    }
   }
 
   res.send(allData);
@@ -74,8 +83,7 @@ exports.getRound2Questions = functions.https.onRequest(async (req, res) => {
     const question = blocks[1].text;
     const answers = blocks
       .slice(2)
-      .map((a) => a.text.replace(/^A |B |C |D /, ""))
-      .trim();
+      .map((a: VisionResultBlock) => a.text.replace(/^A |B |C |D /, ""));
 
     docRef.set({ question, answers });
 
@@ -108,22 +116,30 @@ exports.getRound3Questions = functions.https.onRequest(async (req, res) => {
 
     const answers = blocks
       .slice(15, 18)
-      .map((answer) => ({ ...answer, pieces: [] }));
+      .map((answer: VisionResultBlock) => ({ ...answer, pieces: [] }));
 
     const puzzleGroups = blocks
       .slice(18)
-      .sort((a, b) => a.x - b.x)
-      .reduce((acc, curr, i, src) => {
-        const prev = src[i - 1];
-        if (prev && curr.x - prev.x < 50) {
-          const newAcc = [...acc];
-          newAcc[newAcc.length - 1].text =
-            newAcc[newAcc.length - 1].text + " " + curr.text;
-          return newAcc;
-        } else {
-          return [...acc, curr];
-        }
-      }, []);
+      .sort((a: VisionResultBlock, b: VisionResultBlock) => a.x - b.x)
+      .reduce(
+        (
+          acc: Array<VisionResultBlock>,
+          curr: VisionResultBlock,
+          i: number,
+          src: Array<VisionResultBlock>
+        ) => {
+          const prev: VisionResultBlock = src[i - 1];
+          if (prev && curr.x - prev.x < 50) {
+            const newAcc = [...acc];
+            newAcc[newAcc.length - 1].text =
+              newAcc[newAcc.length - 1].text + " " + curr.text;
+            return newAcc;
+          } else {
+            return [...acc, curr];
+          }
+        },
+        []
+      );
 
     return {
       puzzlePieces,
@@ -138,9 +154,9 @@ exports.getRound3Questions = functions.https.onRequest(async (req, res) => {
     puzzleGroups: formattedData[1].puzzleGroups,
   };
 
-  q01.puzzlePieces.forEach((term) => {
+  q01.puzzlePieces.forEach((term: VisionResultBlock) => {
     const t = term.text.toLowerCase().trim();
-    q01.puzzleGroups.forEach((group, i) => {
+    q01.puzzleGroups.forEach((group: VisionResultBlock, i: number) => {
       const g = group.text.toLowerCase().trim();
       if (g.includes(t)) {
         q01.answers[i].pieces.push(term);
@@ -153,6 +169,16 @@ exports.getRound3Questions = functions.https.onRequest(async (req, res) => {
     answers: formattedData[0].answers,
     puzzleGroups: formattedData[0].puzzleGroups,
   };
+
+  q02.puzzlePieces.forEach((term: VisionResultBlock) => {
+    const t = term.text.toLowerCase().trim();
+    q02.puzzleGroups.forEach((group: VisionResultBlock, i: number) => {
+      const g = group.text.toLowerCase().trim();
+      if (g.includes(t)) {
+        q02.answers[i].pieces.push(term);
+      }
+    });
+  });
 
   const q01Obj = {
     pieces: q01.puzzlePieces,
@@ -170,6 +196,5 @@ exports.getRound3Questions = functions.https.onRequest(async (req, res) => {
   };
 
   docRef.set({ puzzle: qObj });
-
   res.send(allData);
 });
