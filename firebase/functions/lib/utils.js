@@ -9,6 +9,7 @@ function getTextBlocks(res) {
                 blockIndex: blockIndex++,
                 text: getBlockText(block),
                 x: block.boundingBox.vertices[0].x,
+                y: block.boundingBox.vertices[0].y,
             };
         }));
     });

@@ -164,4 +164,63 @@ exports.getRound4Questions = functions.https.onRequest(async (req, res) => {
     }
     res.send(allData);
 });
+exports.getRound5Questions = functions.https.onRequest(async (req, res) => {
+    const imgs = ["q01", "q02"];
+    let allData = [];
+    for (const img of imgs) {
+        const imageUri = `gs://dsm-ocr.appspot.com/round5/${img}.jpg`;
+        const docRef = admin.firestore().collection("round5").doc(img);
+        const [result] = await visionClient.textDetection(imageUri);
+        const data = result.fullTextAnnotation;
+        const blocks = utils.getTextBlocks(data);
+        let questions = {
+            one: [],
+            two: [],
+            three: [],
+        };
+        const answers = blocks.slice(3);
+        answers.forEach((block) => {
+            if (block.y < 150) {
+                questions.one.push(block);
+            }
+            if (block.y > 150 && block.y < 220) {
+                questions.two.push(block);
+            }
+            if (block.y > 220) {
+                questions.three.push(block);
+            }
+        });
+        Object.keys(questions).forEach((key) => {
+            let q = questions[key];
+            let formattedQ;
+            if (q.length === 1) {
+                formattedQ = q.map((question) => {
+                    const split = question.text.split("\n");
+                    const finalQ = split[0];
+                    const answers = split[1].split("|");
+                    return {
+                        question: finalQ.trim(),
+                        answers: answers.map((a) => a.trim()),
+                    };
+                })[0];
+            }
+            else {
+                const finalQ = q[0].text.trim();
+                const answers = q[1].text.split("|");
+                formattedQ = {
+                    question: finalQ,
+                    answers: answers.map((a) => a.trim()),
+                };
+            }
+            questions[key] = formattedQ;
+        });
+        Object.keys(questions).forEach((key) => {
+            questions[key].complete =
+                questions[key].answers.length === 5 ? true : false;
+        });
+        docRef.set({ questions });
+        allData.push(data);
+    }
+    res.send(allData);
+});
 //# sourceMappingURL=index.js.map
