@@ -146,4 +146,22 @@ exports.getRound3Questions = functions.https.onRequest(async (req, res) => {
     docRef.set({ puzzle: qObj });
     res.send(allData);
 });
+exports.getRound4Questions = functions.https.onRequest(async (req, res) => {
+    const imgs = ["q01", "q02"];
+    let allData = [];
+    for (const img of imgs) {
+        const imageUri = `gs://dsm-ocr.appspot.com/round4/${img}.jpg`;
+        const docRef = admin.firestore().collection("round4").doc(img);
+        const [result] = await visionClient.textDetection(imageUri);
+        const data = result.fullTextAnnotation;
+        const blocks = utils.getTextBlocks(data);
+        const question = blocks[2].text;
+        const answers = blocks
+            .slice(3)
+            .map((a) => a.text.replace(/^\W|[0-9]*/g, "").trim());
+        docRef.set({ question, answers });
+        allData.push(data);
+    }
+    res.send(allData);
+});
 //# sourceMappingURL=index.js.map
