@@ -1,13 +1,20 @@
-import styled from "styled-components";
-import tw from "tailwind.macro";
-
 import Head from "next/head";
+import AdminPanel from "../components/AdminPanel";
+import LoginForm from "../components/LoginForm";
 
-const Title = styled.h1`
-  ${tw`text-blue-500 text-lg`};
-`;
+import UserProvider, { useUser } from "../context/userContext";
 
-export default function Home() {
+export default function Admin() {
+  return (
+    <UserProvider>
+      <AdminPage />
+    </UserProvider>
+  );
+}
+
+function AdminPage() {
+  const { loadingUser, user } = useUser();
+
   return (
     <div>
       <Head>
@@ -15,8 +22,9 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="flex justify-center items-center h-screen text-2xl">
-        Admin Panel
+      <main className="flex justify-center items-center h-screen">
+        {!user && !loadingUser && <LoginForm />}
+        {user && <AdminPanel />}
       </main>
     </div>
   );
