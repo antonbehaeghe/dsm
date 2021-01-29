@@ -20,6 +20,9 @@ const Question = styled.div`
   }
 
   input {
+    &:read-only {
+      ${tw`opacity-50 cursor-not-allowed`}
+    }
     ${tw`appearance-none block w-full bg-gray-200 text-gray-700 rounded py-3 px-4 mb-3 leading-tight focus:outline-none`}
   }
 
@@ -115,43 +118,33 @@ function Round3Question({ question, index, handleQEdit }) {
     setContent({ ...content, answers: newAnswers });
   }
 
-  if (editMode) {
-    return (
-      <Question className="grid grid-cols-12 col-gap-4">
-        {content.answers.map((puzzle, i) => (
-          <div className="col-span-4 mb-4">
-            <label className="">Answer</label>
+  return (
+    <Question className="grid grid-cols-12 col-gap-4">
+      {content.answers.map((puzzle, i) => (
+        <div className="col-span-4 mb-4">
+          <label className="">Answer</label>
+          <input
+            type="text"
+            value={puzzle.text}
+            onChange={(e) => handleAnswerChange(e, i)}
+            readOnly={!editMode}
+          />
+          <label className="">Pieces</label>
+          {puzzle.pieces.map((piece, pi) => (
             <input
               type="text"
-              value={puzzle.text}
-              onChange={(e) => handleAnswerChange(e, i)}
+              value={piece.text}
+              onChange={(e) => handlePieceChange(e, i, pi)}
+              readOnly={!editMode}
             />
-            <label className="">Pieces</label>
-            {puzzle.pieces.map((piece, pi) => (
-              <input
-                type="text"
-                value={piece.text}
-                onChange={(e) => handlePieceChange(e, i, pi)}
-              />
-            ))}
-          </div>
-        ))}
-        <SaveButton onClick={handleEdit}>save</SaveButton>
-      </Question>
-    );
-  }
-
-  return (
-    <Question className="grid grid-cols-12">
-      {content.answers.map((puzzle) => (
-        <div className="col-span-4 mb-4">
-          <h1>{puzzle.text}</h1>
-          {puzzle.pieces.map((piece) => (
-            <p>{piece.text}</p>
           ))}
         </div>
       ))}
-      <EditButton onClick={handleEditMode}>edit</EditButton>
+      {editMode ? (
+        <SaveButton onClick={handleEdit}>save</SaveButton>
+      ) : (
+        <EditButton onClick={handleEditMode}>edit</EditButton>
+      )}
     </Question>
   );
 }

@@ -20,18 +20,10 @@ const NavButton = styled.button`
   ${(props) => props.isActive && tw`font-bold`}
 `;
 
-function AdminQuestions() {
+function AdminQuestions({ children }) {
   const [active, setActive] = useState("Round 1");
 
   const rounds = ["Round 1", "Round 2", "Round 3", "Round 4", "Round 5"];
-
-  const questionRounds = {
-    "Round 1": <Round1Questions />,
-    "Round 2": <Round2Questions />,
-    "Round 3": <Round3Questions />,
-    "Round 4": <Round4Questions />,
-    "Round 5": <Round5Questions />,
-  };
 
   return (
     <QuestionGrid className="grid grid-cols-12">
@@ -46,9 +38,7 @@ function AdminQuestions() {
           </NavButton>
         ))}
       </QuestionNav>
-      <QuestionContent className="col-span-10">
-        {questionRounds[active]}
-      </QuestionContent>
+      <QuestionContent className="col-span-10">{children}</QuestionContent>
     </QuestionGrid>
   );
 }

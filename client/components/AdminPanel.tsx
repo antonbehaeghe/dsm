@@ -15,15 +15,13 @@ const AdminContent = styled.div`
   ${tw`p-4`}
 `;
 
-function AdminPanel() {
+function AdminPanel({ children }) {
   return (
     <AdminWrapper>
       <AdminHeader>
         <h1>DSM - Admin</h1>
       </AdminHeader>
-      <AdminContent>
-        <AdminQuestions />
-      </AdminContent>
+      <AdminContent>{children}</AdminContent>
     </AdminWrapper>
   );
 }
